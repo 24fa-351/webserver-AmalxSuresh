@@ -1,21 +1,26 @@
 #ifndef HTTP_MESSAGE_H
 #define HTTP_MESSAGE_H
 
-typedef struct message {
+typedef struct {
+    char* key;
+    char* value;
+} Header;
+typedef struct {
     char* method;
     char* path;
     char* http_version;
-    int body_length;
-    char *headers;
-} http_client_message_t;
+    int header_count;
+    char* body;
+    Header* headers;
+} Request;
 
-typedef enum {
-    BAD_REQUEST,
-    CLOSED_CONNECTION,
-    MESSAGE
-} http_read_result_t;
+Request* request_read_from_fd(int fd);
 
-void read_http_client_message(int client_socket, http_client_message_t** msg, http_read_result_t* result);
-void http_client_message_free(http_client_message_t* msg);
+void request_print(Request* req);
+
+void request_free(Request* req);
+
+// void read_http_client_message(int client_socket, http_client_message_t** msg, http_read_result_t* result);
+// void http_client_message_free(http_client_message_t* msg);
 //bool is_complete_http_message(char* buffer);
 #endif

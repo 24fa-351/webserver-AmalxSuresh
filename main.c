@@ -8,83 +8,50 @@
 #include <unistd.h>
 #include <pthread.h>
 #include "http_message.h"
+#include "paths.h"
 
 #define DEFAULT_PORT 62626
 #define LISTEN_BACKLOG 5
 #define BUFFER_SIZE 1024
 
-int serve_static_file(int socket_fd, const char* file_path) {
-    char full_path[BUFFER_SIZE] = "./static";
-    strncat(full_path, file_path + strlen("/static"), BUFFER_SIZE - strlen(full_path) - 1);
 
-    FILE* file = fopen(full_path, "rb");
-    if (file == NULL) {
-        // Send 404 Not Found if the file doesn't exist
-        char* not_found_response = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
-        write(socket_fd, not_found_response, strlen(not_found_response));
-        return -1;
-    }
 
-    // Get file size
-    struct stat file_stat;
-    if (stat(full_path, &file_stat) != 0) {
-        fclose(file);
-        return -1;
-    }
-    int file_size = file_stat.st_size;
+void server_dispatch_request(Request* req, int fd) {
+    printf("Dispatching request: %s\n", req->path);
 
-    // Send headers
-    char header[BUFFER_SIZE];
-    snprintf(header, sizeof(header), "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n", file_size);
-    write(socket_fd, header, strlen(header));
-
-    // Send file content
-    char buffer[BUFFER_SIZE];
-    int read_bytes;
-    while ((read_bytes = fread(buffer, 1, sizeof(buffer), file)) > 0) {
-        write(socket_fd, buffer, read_bytes);
-    }
-
-    fclose(file);
-    return 0;
-}
-
-int respond_to_http_client_message(int socket_fd, http_client_message_t* http_message) {
-    if(strncmp(http_message -> path, "/static", 7) == 0) {
-        return serve_static_file(socket_fd, http_message -> path);
+    // Route based on the path
+    if (strncmp(req->path, "/calc", 5) == 0) {
+        // Handle `/calc` endpoint
+        handle_calc(req, fd);
+    } else if (strncmp(req->path, "/static", 7) == 0) {
+        // Handle `/static` endpoint (placeholder)
+        handle_static(req, fd);
+    } else if (strcmp(req->path, "/stats") == 0) {
+        // Handle `/stats` endpoint (placeholder)
+        handle_stats(req, fd);
     } else {
-       char* response = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n";
-        write(socket_fd, response, strlen(response));
-        return 0; 
+        // Handle unknown routes
+        dprintf(fd, "HTTP/1.1 404 Not Found\r\n\r\n");
     }
-    
 }
 
 void handle_connection(int* socket_fd_ptr) {
     int socket_fd = *socket_fd_ptr;
     free(socket_fd_ptr);
-
+    
+    printf("handling connection on %d\n", socket_fd);
     while(1) {
-        printf("handling connection on %d\n", socket_fd);
-        http_client_message_t* http_message;
-        http_read_result_t result;
-        // sscanf(BUFFER_SIZE, "%s %s %s", http_message -> method, http_message -> path, http_message -> http_version);
-        // if(!)
-        read_http_client_message(socket_fd, &http_message, &result);
-        if(result == BAD_REQUEST) {
-            printf("Bad request\n");
-            close(socket_fd);
-            return;
-        } else if (result == CLOSED_CONNECTION) {
-            printf("Closed connection\n");
-            close(socket_fd);
-            return;
+        Request* req = request_read_from_fd(socket_fd);
+        if(req == NULL) {
+            break;
         }
+        request_print(req);
 
-        respond_to_http_client_message(socket_fd, http_message);  
-        http_client_message_free(http_message);
+        server_dispatch_request(req, socket_fd);
+        request_free(req);
     }
     printf("Connection closed for %d.\n", socket_fd);
+    close(socket_fd);
 }
 
 int main(int argc, char* argv[]) {
