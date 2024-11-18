@@ -2,14 +2,13 @@
 #define HTTP_PATH_H
 #include "http_message.h"
 
-//extern ServerStats server_stats;
-
 typedef struct {
-    int total_requests;     // Total number of requests
-    long long bytes_received;  // Total bytes received
-    long long bytes_sent;      // Total bytes sent
+    int total_requests;  
+    long long bytes_received; 
+    long long bytes_sent;      
 } ServerStats;
 
+extern ServerStats server_stats;
 
 void handle_calc(Request* req, int client_fd);
 void handle_stats(Request* req, int client_fd);

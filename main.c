@@ -17,20 +17,17 @@
 
 
 void server_dispatch_request(Request* req, int fd) {
+
     printf("Dispatching request: %s\n", req->path);
 
     // Route based on the path
-    if (strncmp(req->path, "/calc", 5) == 0) {
-        // Handle `/calc` endpoint
+    if (strncmp(req -> path, "/calc", 5) == 0) {
         handle_calc(req, fd);
-    } else if (strncmp(req->path, "/static", 7) == 0) {
-        // Handle `/static` endpoint (placeholder)
+    } else if (strncmp(req -> path, "/static", 7) == 0) {
         handle_static(req, fd);
-    } else if (strcmp(req->path, "/stats") == 0) {
-        // Handle `/stats` endpoint (placeholder)
+    } else if (strcmp(req -> path, "/stats") == 0) {
         handle_stats(req, fd);
     } else {
-        // Handle unknown routes
         dprintf(fd, "HTTP/1.1 404 Not Found\r\n\r\n");
     }
 }
@@ -38,13 +35,14 @@ void server_dispatch_request(Request* req, int fd) {
 void handle_connection(int* socket_fd_ptr) {
     int socket_fd = *socket_fd_ptr;
     free(socket_fd_ptr);
-    
     printf("handling connection on %d\n", socket_fd);
     while(1) {
+        //take user input in server
         Request* req = request_read_from_fd(socket_fd);
         if(req == NULL) {
             break;
         }
+
         request_print(req);
 
         server_dispatch_request(req, socket_fd);
@@ -59,6 +57,7 @@ int main(int argc, char* argv[]) {
 
     port = DEFAULT_PORT;
 
+    //custom port number
     if (argc == 3 && strcmp(argv[1], "-p") == 0) {
         port = atoi(argv[2]);
     }

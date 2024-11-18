@@ -5,6 +5,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "http_message.h"
+#include "paths.h"
+
+ServerStats server_stats = {0, 0, 0};
 
 bool read_request_line(Request* req, int fd);
 bool read_headers(Request* req, int fd);
@@ -34,6 +37,7 @@ Request* request_read_from_fd(int fd) {
     return req;
 }
 
+//Print all the information that pertains to the request made by user
 void request_print(Request* req) {
     printf("printing request\n");
     if(req -> method) {
@@ -45,16 +49,17 @@ void request_print(Request* req) {
     if(req -> http_version) {
         printf("Version: %s\n", req -> http_version);
     }
-    for(int ix = 0; ix < req -> header_count; ix ++) {
+    for(int ix = 0; ix < req -> header_count; ix++) {
         printf("header %d: %s: %s\n", ix, req -> headers[ix].key, req -> headers[ix].value);
     }
     
     printf("request donezo\n");
 }
 
+//free memeory if pointer isn't null
 #define FREE_IF_NOT_NULL(ptr) if (ptr) {free(ptr);}
 void request_free(Request* req) {
-    printf("Freeing reqeust");
+    printf("Freeing request\n");
     FREE_IF_NOT_NULL(req -> method);
     FREE_IF_NOT_NULL(req -> path);
     FREE_IF_NOT_NULL(req -> http_version);
@@ -68,6 +73,7 @@ void request_free(Request* req) {
     free(req);
 }
 
+//read single line from fd
 char* read_line(int fd) {
     printf("reading line from fd %d\n", fd);
     char* line = malloc(10000);
@@ -79,6 +85,7 @@ char* read_line(int fd) {
         if(number_bytes_read <= 0) {
             return NULL;
         }
+        server_stats.bytes_received += number_bytes_read;
         if(ch == '\n') {
             break;
         }
@@ -93,6 +100,7 @@ char* read_line(int fd) {
     return line;
 }
 
+//use read_line function to read the input line and extract the method, path, and HTTP version
 bool read_request_line(Request* req, int fd) {
     printf("reading request line\n");
     char* line = read_line(fd);
@@ -122,6 +130,7 @@ bool read_request_line(Request* req, int fd) {
     return true;
 }
 
+
 bool read_headers(Request* req, int fd) {
     printf("reading headers\n");
     req -> headers = malloc(sizeof(Header) * 100);
@@ -131,6 +140,9 @@ bool read_headers(Request* req, int fd) {
         if(line == NULL) {
             return false;
         }
+
+        server_stats.bytes_received += strlen(line) + 1;
+
         if (strlen(line) == 0) {
             free(line);
             break;
@@ -151,6 +163,7 @@ bool read_headers(Request* req, int fd) {
         req -> headers[req -> header_count].key = realloc(req -> headers[req -> header_count].key, strlen(req -> headers[req -> header_count].key) + 1);
         req -> headers[req -> header_count].value = realloc(req -> headers[req -> header_count].value, strlen(req -> headers[req -> header_count].value) + 1);
         req -> header_count++;
+        printf("yo %s\n", req -> headers[req -> header_count].key);
         free(line);
     }
     return true;
@@ -184,12 +197,13 @@ bool read_body(Request* req, int fd) {
                 return false;
             }
             total_read += bytes_read;
+            server_stats.bytes_received += bytes_read;
         }
         req->body[content_length] = '\0'; // Null-terminate the body
         return true;
     } else {
         printf("No Content-Length or body is empty\n");
-        req->body = NULL; // No body
+        req -> body = NULL; // No body
         return true;
     }
 }

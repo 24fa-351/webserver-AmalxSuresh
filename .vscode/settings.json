@@ -4,6 +4,7 @@
         "unistd.h": "c",
         "string.h": "c",
         "stdbool.h": "c",
-        "http_message.h": "c"
+        "http_message.h": "c",
+        "paths.h": "c"
     }
 }

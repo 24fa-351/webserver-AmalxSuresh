@@ -7,11 +7,11 @@
 #include "paths.h"
 #include "http_message.h"
 
-ServerStats server_stats = {0, 0, 0};
+//ServerStats server_stats = {0, 0, 0};
 
 void handle_static(Request* req, int client_fd) {
-    char file_path[1024] = "./static";
-    strncat(file_path, req->path + 7, sizeof(file_path) - strlen(file_path) - 1); // Skip "/static"
+    char file_path[1024] = "/static";
+    strncat(file_path, req -> path + 7, sizeof(file_path) - strlen(file_path) - 1); 
 
     FILE* file = fopen(file_path, "rb");
     if (!file) {
@@ -40,7 +40,7 @@ void handle_static(Request* req, int client_fd) {
     fclose(file);
 }
 
-
+//takes stats for sent and received bytes from read_line, read_headers, and read_body methods
 void handle_stats(Request* req, int client_fd) {
     char response[1024];
     snprintf(response, sizeof(response),
@@ -58,18 +58,17 @@ void handle_stats(Request* req, int client_fd) {
     server_stats.bytes_sent += strlen(response);
 }
 
+//Adding numbers
 void handle_calc(Request* req, int client_fd) {
-    int a = 0, b = 0;
-    sscanf(req->path, "/calc/%d/%d", &a, &b);
-
-    int sum = a + b;
-
+    int a = 0, b = 0, sum;
     char response[512];
+
+    sscanf(req->path, "/calc/%d/%d", &a, &b);
+    sum = a + b;
     snprintf(response, sizeof(response),
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/plain\r\n\r\n"
         "Sum: %d\n", sum);
-
     write(client_fd, response, strlen(response));
     server_stats.bytes_sent += strlen(response);
 }

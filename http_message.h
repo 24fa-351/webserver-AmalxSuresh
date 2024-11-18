@@ -5,6 +5,7 @@ typedef struct {
     char* key;
     char* value;
 } Header;
+
 typedef struct {
     char* method;
     char* path;
