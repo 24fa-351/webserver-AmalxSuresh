@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "pthread.h": "c",
+        "unistd.h": "c",
+        "string.h": "c",
+        "stdbool.h": "c",
+        "http_message.h": "c",
+        "paths.h": "c"
+    }
+}
